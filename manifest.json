@@ -6,11 +6,28 @@
   "background_color": "#0f172a",
   "theme_color": "#4f46e5",
   "orientation": "portrait",
+  "description": "Professional household expense and record manager.",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/619/619153.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/619/619153.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/619/619153.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile Dashboard"
     }
   ]
 }

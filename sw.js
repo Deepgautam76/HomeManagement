@@ -1,4 +1,4 @@
-const CACHE_NAME = 'homenexus-v1';
+const CACHE_NAME = 'homenexus-v2';
 const assets = [
   './',
   './index.html',
