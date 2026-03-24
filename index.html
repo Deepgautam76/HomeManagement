@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+  <head>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>HomeNexus | Pro Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              darkbg: "#0f172a",
+              darkcard: "#1e293b",
+              whatsapp: "#25D366",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html, body { overscroll-behavior-y: contain; position: fixed; width: 100%; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+      body { font-family: "Plus Jakarta Sans", sans-serif; -webkit-tap-highlight-color: transparent; }
+      .modal-overlay { display: none; align-items: center; justify-content: center; padding: 20px; }
+      .modal-overlay.flex { display: flex; }
+      .modal-box-ui { transform: scale(0.9); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+      .modal-active { transform: scale(1) !important; opacity: 1 !important; }
+      .stop-scroll { overflow: hidden; }
+      .error-shake { animation: shake 0.4s ease-in-out; border: 2px solid #ef4444 !important; }
+      @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+      #custom-cat-container { transition: all 0.3s ease; max-height: 0; overflow: hidden; opacity: 0; }
+      #custom-cat-container.show { max-height: 100px; opacity: 1; margin-top: 1rem; }
+    </style>
+  </head>
+  <body class="bg-slate-50 dark:bg-darkbg text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-300">
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-darkbg/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white"><i data-lucide="home" size="18"></i></div>
+        <h1 class="text-xl font-bold tracking-tight">HomeNexus</h1>
+      </div>
+      <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800"><i data-lucide="moon" id="theme-icon"></i></button>
+    </header>
+
+    <main class="container mx-auto px-4 pt-6 pb-32 max-w-4xl">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="p-6 rounded-[2rem] bg-indigo-600 text-white shadow-xl shadow-indigo-200">
+          <p class="text-[10px] uppercase font-bold opacity-80">All Time Spent</p>
+          <h2 class="text-2xl font-bold mt-1" id="total-display">₹0</h2>
+        </div>
+        <div class="p-6 rounded-[2rem] bg-emerald-500 text-white shadow-xl shadow-emerald-100">
+          <p class="text-[10px] uppercase font-bold opacity-80">This Month</p>
+          <h2 class="text-2xl font-bold mt-1" id="month-display">₹0</h2>
+        </div>
+        <div class="p-6 rounded-[2rem] bg-white dark:bg-darkcard border border-slate-200 dark:border-slate-700 shadow-sm">
+          <p class="text-[10px] uppercase font-bold text-slate-400">Total Entries</p>
+          <h2 class="text-2xl font-bold mt-1" id="count-display">0</h2>
+        </div>
+      </div>
+
+      <div class="mb-6 px-2 space-y-4">
+        <div class="flex justify-between items-center">
+            <h3 class="font-bold text-lg">Recent Records</h3>
+            <button onclick="confirmAction('clear')" class="text-xs text-red-500 font-semibold hover:underline">Clear All</button>
+        </div>
+        
+        <div class="relative group">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size="18"></i>
+            <input type="text" id="search-input" oninput="render()" placeholder="Search by name or category..." 
+                   class="w-full pl-12 pr-4 py-4 bg-white dark:bg-darkcard border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+        </div>
+      </div>
+
+      <div id="records-list" class="space-y-4"></div>
+    </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-darkcard/90 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-10 py-5 flex justify-between items-center">
+      <button class="text-indigo-600"><i data-lucide="layout-dashboard"></i></button>
+      <button onclick="openModal('add-modal')" class="bg-indigo-600 text-white p-4 rounded-full -mt-16 shadow-2xl hover:scale-110 active:scale-95 transition-all">
+        <i data-lucide="plus" size="28"></i>
+      </button>
+      <button class="text-slate-400"><i data-lucide="user"></i></button>
+    </nav>
+
+    <div id="add-modal" class="modal-overlay fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm">
+      <div class="modal-box-ui bg-white dark:bg-darkcard w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl" id="add-modal-box">
+        <div class="flex justify-between items-center mb-8">
+          <h2 class="text-2xl font-bold" id="modal-title">Add Record</h2>
+          <button onclick="closeModal('add-modal')" class="p-2 bg-slate-100 dark:bg-slate-800 rounded-full"><i data-lucide="x" size="20"></i></button>
+        </div>
+        <div class="space-y-5">
+          <input type="hidden" id="edit-index" value="-1">
+          <input type="text" id="inp-name" class="w-full bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Worker Name" />
+          <div>
+            <select id="inp-cat" onchange="checkOther(this.value)" class="w-full bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-indigo-500">
+              <option>Newspaper</option>
+              <option>House Cleaning</option>
+              <option>Room Rent</option>
+              <option value="Other">Other Profession...</option>
+            </select>
+            <div id="custom-cat-container"><input type="text" id="inp-custom-cat" class="w-full bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 outline-none border-2 border-indigo-200 dark:border-indigo-900 focus:ring-2 focus:ring-indigo-500" placeholder="Enter Profession Name" /></div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <input type="number" id="inp-amt" class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Amount" />
+            <input type="date" id="inp-date" class="bg-slate-50 dark:bg-slate-800 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <button onclick="saveRecord()" class="w-full py-5 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg hover:bg-indigo-700 active:scale-95 transition-all">Save Record</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay fixed inset-0 z-[60] bg-slate-900/40 dark:bg-black/60 backdrop-blur-[2px]">
+      <div class="modal-box-ui bg-white dark:bg-darkcard w-full max-w-xs rounded-[2rem] p-6 text-center shadow-2xl" id="confirm-modal-box">
+        <div class="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="alert-triangle" size="32"></i></div>
+        <h3 class="text-xl font-bold mb-2">Are you sure?</h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">This action cannot be undone.</p>
+        <div class="flex gap-3">
+          <button onclick="closeModal('confirm-modal')" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 font-bold rounded-xl">Cancel</button>
+          <button id="confirm-btn" class="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl shadow-lg">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let data = JSON.parse(localStorage.getItem("hn_records")) || [];
+
+      function render() {
+        const list = document.getElementById("records-list");
+        const searchTerm = document.getElementById("search-input").value.toLowerCase();
+        list.innerHTML = "";
+        
+        let totalAllTime = 0;
+        let totalMonth = 0;
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+
+        const filteredData = data.filter(item => 
+            item.name.toLowerCase().includes(searchTerm) || 
+            item.cat.toLowerCase().includes(searchTerm)
+        );
+
+        if (filteredData.length === 0) {
+          list.innerHTML = `<div class="text-center py-20 opacity-30"><i data-lucide="search-x" class="mx-auto mb-2"></i><p>${searchTerm ? 'No matching records' : 'No records yet'}</p></div>`;
+        } else {
+          filteredData.forEach((item) => {
+            const originalIndex = data.indexOf(item);
+            const itemAmt = parseFloat(item.amt || 0);
+            totalAllTime += itemAmt;
+            const itemDate = new Date(item.date);
+            if (itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear) {
+              totalMonth += itemAmt;
+            }
+
+            const div = document.createElement("div");
+            div.className = "bg-white dark:bg-darkcard p-5 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:shadow-md";
+            div.innerHTML = `
+              <div class="flex items-center gap-4 md:w-1/3">
+                <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center shrink-0">
+                  <i data-lucide="${getIcon(item.cat)}" size="22"></i>
+                </div>
+                <div>
+                  <p class="font-bold text-base leading-tight">${item.name}</p>
+                  <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">${item.date}</p>
+                </div>
+              </div>
+              <div class="md:w-1/3 flex md:justify-center">
+                <span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full font-bold uppercase text-slate-500 tracking-wide">${item.cat}</span>
+              </div>
+              <div class="flex items-center justify-between md:justify-end md:w-1/3 gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-slate-50 dark:border-slate-800">
+                <span class="font-bold text-xl tracking-tight mr-2">₹${item.amt}</span>
+                <div class="flex gap-2">
+                  <button onclick="shareWhatsApp(${originalIndex})" class="p-2.5 bg-[#25D366]/10 text-[#25D366] rounded-full hover:scale-110 active:scale-90 transition"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.937 3.659 1.432 5.628 1.433h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></button>
+                  <button onclick="editRecord(${originalIndex})" class="p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-full hover:scale-110 transition shadow-sm"><i data-lucide="pencil" size="18"></i></button>
+                  <button onclick="confirmAction('remove', ${originalIndex})" class="p-2.5 text-slate-300 hover:text-red-500 transition"><i data-lucide="trash-2" size="20"></i></button>
+                </div>
+              </div>`;
+            list.appendChild(div);
+          });
+        }
+        document.getElementById("total-display").innerText = `₹${totalAllTime.toLocaleString()}`;
+        document.getElementById("month-display").innerText = `₹${totalMonth.toLocaleString()}`;
+        document.getElementById("count-display").innerText = data.length;
+        lucide.createIcons();
+      }
+
+      function saveRecord() {
+        const index = parseInt(document.getElementById('edit-index').value);
+        const name = document.getElementById("inp-name");
+        const cat = document.getElementById("inp-cat");
+        const customCat = document.getElementById("inp-custom-cat");
+        const amt = document.getElementById("inp-amt");
+        const date = document.getElementById("inp-date");
+        let finalCat = cat.value === "Other" ? customCat.value : cat.value;
+        let valid = true;
+        [name, amt, date].forEach(el => { if (!el.value) { el.classList.add("error-shake"); setTimeout(() => el.classList.remove("error-shake"), 400); valid = false; }});
+        if (cat.value === "Other" && !customCat.value) { customCat.classList.add("error-shake"); setTimeout(() => customCat.classList.remove("error-shake"), 400); valid = false; }
+        if (!valid) return;
+        const newObj = { name: name.value, cat: finalCat, amt: amt.value, date: date.value };
+        if (index === -1) data.unshift(newObj); else data[index] = newObj;
+        localStorage.setItem("hn_records", JSON.stringify(data));
+        render(); closeModal("add-modal");
+      }
+
+      function editRecord(index) {
+        const item = data[index];
+        document.getElementById('modal-title').innerText = "Edit Record";
+        document.getElementById('edit-index').value = index;
+        document.getElementById('inp-name').value = item.name;
+        document.getElementById('inp-amt').value = item.amt;
+        document.getElementById('inp-date').value = item.date;
+        const std = ["Newspaper", "House Cleaning", "Room Rent"];
+        if (std.includes(item.cat)) { document.getElementById('inp-cat').value = item.cat; checkOther(item.cat); } 
+        else { document.getElementById('inp-cat').value = "Other"; document.getElementById('inp-custom-cat').value = item.cat; checkOther("Other"); }
+        openModal('add-modal');
+      }
+
+      function checkOther(val) {
+        const container = document.getElementById("custom-cat-container");
+        if (val === "Other") container.classList.add("show"); else container.classList.remove("show");
+      }
+
+      function shareWhatsApp(index) {
+        const item = data[index];
+        const msg = `*Household Payment Record*%0A--------------------------%0A👤 *Name:* ${item.name}%0A🛠️ *Service:* ${item.cat}%0A📅 *Date:* ${item.date}%0A💰 *Amount:* ₹${item.amt}%0A--------------------------%0AGenerated via HomeNexus Dashboard`;
+        window.open(`https://wa.me/?text=${msg}`, "_blank");
+      }
+
+      function confirmAction(type, index = null) {
+        openModal("confirm-modal");
+        document.getElementById("confirm-btn").onclick = () => {
+          if (type === "remove") data.splice(index, 1); else { data = []; localStorage.clear(); }
+          localStorage.setItem("hn_records", JSON.stringify(data));
+          render(); closeModal("confirm-modal");
+        };
+      }
+
+      function openModal(id) {
+        document.getElementById(id).classList.add("flex"); document.getElementById(id).classList.remove("hidden");
+        document.body.classList.add("stop-scroll");
+        setTimeout(() => document.getElementById(id + "-box").classList.add("modal-active"), 10);
+      }
+
+      function closeModal(id) {
+        document.getElementById(id + "-box").classList.remove("modal-active");
+        setTimeout(() => {
+          document.getElementById(id).classList.add("hidden"); document.getElementById(id).classList.remove("flex"); document.body.classList.remove("stop-scroll");
+          if(id === 'add-modal') { document.getElementById('edit-index').value = "-1"; document.getElementById('modal-title').innerText = "Add Record"; document.getElementById('inp-name').value = ""; document.getElementById('inp-amt').value = ""; document.getElementById('inp-custom-cat').value = ""; document.getElementById('inp-cat').selectedIndex = 0; checkOther('Newspaper'); }
+        }, 300);
+      }
+
+      function toggleTheme() {
+        const isDark = document.documentElement.classList.toggle("dark");
+        document.getElementById("theme-icon").setAttribute("data-lucide", isDark ? "sun" : "moon");
+        lucide.createIcons();
+      }
+
+      function getIcon(cat) {
+        const c = cat.toLowerCase();
+        if (c.includes("news")) return "newspaper";
+        if (c.includes("rent")) return "home";
+        if (c.includes("clean")) return "sparkles";
+        return "briefcase";
+      }
+
+      window.onload = () => { render(); document.getElementById("inp-date").valueAsDate = new Date(); };
+    </script>
+  </body>
+</html>
