@@ -22,3 +22,15 @@ self.addEventListener('fetch', e => {
     })
   );
 });
+
+// Activating and cleaning up old caches
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      );
+    })
+  );
+  return self.clients.claim(); // This forces the app to become "installable" faster
+});
