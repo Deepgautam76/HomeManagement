@@ -486,22 +486,38 @@
         return "briefcase";
       }
 
+      // window.onload = () => {
+      //   render();
+      //   document.getElementById("inp-date").valueAsDate = new Date();
+      // };
+
+      // Keep track of the install prompt
+      let deferredPrompt;
+
       window.onload = () => {
         render();
         document.getElementById("inp-date").valueAsDate = new Date();
-      };
-    </script>
 
-    // Register Service Worker for PWA functionality
-    <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
+        // SERVICE WORKER REGISTRATION
+        if ("serviceWorker" in navigator) {
           navigator.serviceWorker
             .register("./sw.js")
             .then((reg) => console.log("Service Worker Registered"))
             .catch((err) => console.log("Service Worker Failed", err));
-        });
-      }
+        }
+      };
+
+      // Listen for the browser's install invitation
+      window.addEventListener("beforeinstallprompt", (e) => {
+        // Prevent Chrome from showing its own small bar
+        e.preventDefault();
+        // Save the event so we can trigger it when the user clicks a button later if we want
+        deferredPrompt = e;
+        console.log("HomeNexus is ready to be installed!");
+
+        // Optional: You can trigger deferredPrompt.prompt() here
+        // if you want it to show up immediately after a user action.
+      });
     </script>
   </body>
 </html>
